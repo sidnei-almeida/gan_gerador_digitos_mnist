@@ -743,7 +743,7 @@ def page_images(training_images):
 
 
 def page_generation(generator):
-    st.markdown('<h2 style="color: #46B3E6; font-family: \'Inter\', sans-serif; font-weight: 600; margin-bottom: 2rem;">🎨 Geração Interativa</h2>', unsafe_allow_html=True)
+    st.markdown('<h2 style="color: #46B3E6; font-family: \'Inter\', sans-serif; font-weight: 600; margin-bottom: 2rem;">🎨 Geração de Dígitos</h2>', unsafe_allow_html=True)
     
     if generator is None:
         st.markdown("""
@@ -756,110 +756,112 @@ def page_generation(generator):
         """, unsafe_allow_html=True)
         return
     
-    # Interface de geração premium
-    st.markdown('<h3 style="color: #46B3E6; font-family: \'Inter\', sans-serif; font-weight: 600; margin-bottom: 1rem;">⚙️ Configurações de Geração</h3>', unsafe_allow_html=True)
+    # Tabs para organizar as funcionalidades
+    tab1, tab2 = st.tabs(["🎲 Geração Interativa", "🔍 Travessia Latente"])
     
-    col1, col2, col3 = st.columns(3)
-    
-    with col1:
-        st.markdown("""
-        <div class="data-card">
-            <h4 style="color: #46B3E6; font-family: 'Inter', sans-serif; font-weight: 600; margin-bottom: 0.6rem;">🎲 Parâmetros</h4>
-        </div>
-        """, unsafe_allow_html=True)
-        latent_dim = st.number_input("Dimensão do ruído (latent)", min_value=16, max_value=256, value=100, step=4, help="Tamanho do vetor de ruído de entrada")
-        seed = st.number_input("Seed (opcional)", min_value=0, max_value=10_000, value=0, step=1, help="Para reproduzir resultados")
-    
-    with col2:
-        st.markdown("""
-        <div class="data-card">
-            <h4 style="color: #46B3E6; font-family: 'Inter', sans-serif; font-weight: 600; margin-bottom: 0.6rem;">📐 Layout</h4>
-        </div>
-        """, unsafe_allow_html=True)
-        grid = st.selectbox("Grade", options=["4x4", "5x5", "6x6"], index=0, help="Número de dígitos por linha/coluna")
-        grid_map = {"4x4": (4,4), "5x5": (5,5), "6x6": (6,6)}
-        rows, cols_ = grid_map[grid]
-        count = rows * cols_
-    
-    with col3:
-        st.markdown("""
-        <div class="data-card">
-            <h4 style="color: #46B3E6; font-family: 'Inter', sans-serif; font-weight: 600; margin-bottom: 0.6rem;">🎯 Ação</h4>
-        </div>
-        """, unsafe_allow_html=True)
-        if st.button("🚀 Gerar Dígitos", type="primary", use_container_width=True):
-            with st.spinner("Gerando dígitos..."):
-                preds = generate_digits(generator, num_images=count, latent_dim=latent_dim, seed=seed)
-                img = grid_image_from_predictions(preds, grid_rows=rows, grid_cols=cols_)
-                if img is not None:
-                    st.session_state.generated_image = img
-                    st.session_state.generated_predictions = preds
-                    st.session_state.generation_params = {
-                        'latent_dim': latent_dim,
-                        'seed': seed,
-                        'grid': grid
-                    }
-                else:
-                    st.error("Falha na geração.")
-    
-    # Exibir resultado da geração
-    if 'generated_image' in st.session_state:
-        st.markdown("---")
-        st.markdown('<h3 style="color: #46B3E6; font-family: \'Inter\', sans-serif; font-weight: 600; margin-bottom: 1rem;">🖼️ Resultado da Geração</h3>', unsafe_allow_html=True)
+    with tab1:
+        st.markdown('<h3 style="color: #46B3E6; font-family: \'Inter\', sans-serif; font-weight: 600; margin-bottom: 1.5rem;">⚙️ Configurações de Geração</h3>', unsafe_allow_html=True)
         
-        col1, col2 = st.columns([2, 1])
+        # Layout otimizado: controles à esquerda, resultado à direita
+        col_controls, col_result = st.columns([1, 2])
         
-        with col1:
-            st.image(st.session_state.generated_image, caption=f"Grade {st.session_state.generation_params['grid']} - Latent {st.session_state.generation_params['latent_dim']}", use_container_width=True)
+        with col_controls:
+            st.markdown("""
+            <div class="data-card">
+                <h4 style="color: #46B3E6; font-family: 'Inter', sans-serif; font-weight: 600; margin-bottom: 0.8rem;">🎲 Parâmetros</h4>
+            </div>
+            """, unsafe_allow_html=True)
+            
+            latent_dim = st.number_input("Dimensão do ruído", min_value=16, max_value=256, value=100, step=4, help="Tamanho do vetor de ruído de entrada")
+            seed = st.number_input("Seed", min_value=0, max_value=10_000, value=0, step=1, help="Para reproduzir resultados")
+            
+            st.markdown("""
+            <div class="data-card">
+                <h4 style="color: #46B3E6; font-family: 'Inter', sans-serif; font-weight: 600; margin-bottom: 0.8rem;">📐 Layout</h4>
+            </div>
+            """, unsafe_allow_html=True)
+            
+            grid = st.selectbox("Grade", options=["4x4", "5x5", "6x6"], index=0, help="Número de dígitos por linha/coluna")
+            grid_map = {"4x4": (4,4), "5x5": (5,5), "6x6": (6,6)}
+            rows, cols_ = grid_map[grid]
+            count = rows * cols_
+            
+            st.markdown("""
+            <div class="data-card">
+                <h4 style="color: #46B3E6; font-family: 'Inter', sans-serif; font-weight: 600; margin-bottom: 0.8rem;">🎯 Ação</h4>
+            </div>
+            """, unsafe_allow_html=True)
+            
+            if st.button("🚀 Gerar Dígitos", type="primary", use_container_width=True):
+                with st.spinner("Gerando dígitos..."):
+                    preds = generate_digits(generator, num_images=count, latent_dim=latent_dim, seed=seed)
+                    img = grid_image_from_predictions(preds, grid_rows=rows, grid_cols=cols_)
+                    if img is not None:
+                        st.session_state.generated_image = img
+                        st.session_state.generated_predictions = preds
+                        st.session_state.generation_params = {
+                            'latent_dim': latent_dim,
+                            'seed': seed,
+                            'grid': grid
+                        }
+                    else:
+                        st.error("Falha na geração.")
         
-        with col2:
-            # Métricas de qualidade premium
-            if 'generated_predictions' in st.session_state:
-                preds = st.session_state.generated_predictions
-                
-                # Diversidade: média da distância L2 entre pares amostrados
-                flat = preds.reshape(preds.shape[0], -1)
-                sample_idx = np.linspace(0, flat.shape[0]-1, num=min(16, flat.shape[0]), dtype=int)
-                subset = flat[sample_idx]
-                dists = []
-                for i in range(len(subset)):
-                    for j in range(i+1, len(subset)):
-                        dists.append(np.linalg.norm(subset[i]-subset[j]))
-                diversity = float(np.mean(dists)) if dists else 0.0
-                
-                # Esparsidade média (% de pixels > 0.5)
-                sparsity = float((flat > 0.5).mean())
-                
-                # Simetria (diferença média entre metades esquerda/direita)
-                imgs = preds if preds.ndim == 4 else preds[..., np.newaxis]
-                left = imgs[..., :imgs.shape[2]//2, :]
-                right = np.flip(imgs[..., imgs.shape[2]//2:, :], axis=2)
-                symmetry = float(np.mean(np.abs(left - right)))
-                
+        with col_result:
+            if 'generated_image' in st.session_state:
+                st.markdown('<h4 style="color: #46B3E6; font-family: \'Inter\', sans-serif; font-weight: 600; margin-bottom: 1rem;">🖼️ Resultado da Geração</h4>', unsafe_allow_html=True)
+                st.image(st.session_state.generated_image, caption=f"Grade {st.session_state.generation_params['grid']} - Latent {st.session_state.generation_params['latent_dim']}", use_container_width=True)
+            else:
                 st.markdown("""
-                <div class="data-card">
-                    <h4 style="color: #46B3E6; font-family: 'Inter', sans-serif; font-weight: 600; margin-bottom: 0.6rem;">📊 Métricas de Qualidade</h4>
+                <div class="data-card" style="text-align: center; padding: 3rem;">
+                    <p style="color: #B0B0B0; font-size: 0.85rem; margin: 0;">Configure os parâmetros e clique em "Gerar Dígitos" para criar uma grade de dígitos</p>
                 </div>
                 """, unsafe_allow_html=True)
-                
-                c1, c2 = st.columns(2)
-                with c1:
-                    st.markdown(f"""
-                    <div class="metric-card">
-                        <div style="display:flex;justify-content:space-between;align-items:center;">
-                            <span>🔀 Diversidade</span><span style="color:#46B3E6;font-weight:800;">{diversity:.3f}</span>
-                        </div>
+        
+        # Métricas de qualidade (abaixo da imagem)
+        if 'generated_predictions' in st.session_state:
+            st.markdown("---")
+            st.markdown('<h4 style="color: #46B3E6; font-family: \'Inter\', sans-serif; font-weight: 600; margin-bottom: 1rem;">📊 Métricas de Qualidade</h4>', unsafe_allow_html=True)
+            
+            preds = st.session_state.generated_predictions
+            
+            # Diversidade: média da distância L2 entre pares amostrados
+            flat = preds.reshape(preds.shape[0], -1)
+            sample_idx = np.linspace(0, flat.shape[0]-1, num=min(16, flat.shape[0]), dtype=int)
+            subset = flat[sample_idx]
+            dists = []
+            for i in range(len(subset)):
+                for j in range(i+1, len(subset)):
+                    dists.append(np.linalg.norm(subset[i]-subset[j]))
+            diversity = float(np.mean(dists)) if dists else 0.0
+            
+            # Esparsidade média (% de pixels > 0.5)
+            sparsity = float((flat > 0.5).mean())
+            
+            # Simetria (diferença média entre metades esquerda/direita)
+            imgs = preds if preds.ndim == 4 else preds[..., np.newaxis]
+            left = imgs[..., :imgs.shape[2]//2, :]
+            right = np.flip(imgs[..., imgs.shape[2]//2:, :], axis=2)
+            symmetry = float(np.mean(np.abs(left - right)))
+            
+            col1, col2, col3 = st.columns(3)
+            with col1:
+                st.markdown(f"""
+                <div class="metric-card">
+                    <div style="display:flex;justify-content:space-between;align-items:center;">
+                        <span>🔀 Diversidade</span><span style="color:#46B3E6;font-weight:800;">{diversity:.3f}</span>
                     </div>
-                    """, unsafe_allow_html=True)
-                with c2:
-                    st.markdown(f"""
-                    <div class="metric-card">
-                        <div style="display:flex;justify-content:space-between;align-items:center;">
-                            <span>🧩 Esparsidade</span><span style="color:#46B3E6;font-weight:800;">{sparsity:.1%}</span>
-                        </div>
+                </div>
+                """, unsafe_allow_html=True)
+            with col2:
+                st.markdown(f"""
+                <div class="metric-card">
+                    <div style="display:flex;justify-content:space-between;align-items:center;">
+                        <span>🧩 Esparsidade</span><span style="color:#46B3E6;font-weight:800;">{sparsity:.1%}</span>
                     </div>
-                    """, unsafe_allow_html=True)
-                
+                </div>
+                """, unsafe_allow_html=True)
+            with col3:
                 st.markdown(f"""
                 <div class="metric-card">
                     <div style="display:flex;justify-content:space-between;align-items:center;">
@@ -867,81 +869,77 @@ def page_generation(generator):
                     </div>
                 </div>
                 """, unsafe_allow_html=True)
+            
+            # Histograma de intensidades
+            st.markdown('<h4 style="color: #46B3E6; font-family: \'Inter\', sans-serif; font-weight: 600; margin: 1.5rem 0 1rem 0;">📈 Distribuição de Intensidades</h4>', unsafe_allow_html=True)
+            fig = px.histogram(flat.flatten(), nbins=30, title='Distribuição de Intensidades dos Pixels')
+            fig.update_layout(
+                plot_bgcolor='rgba(0,0,0,0)', 
+                paper_bgcolor='rgba(0,0,0,0)', 
+                font_color='#FAFAFA',
+                title_font_size=14,
+                xaxis_title="Intensidade (0-1)",
+                yaxis_title="Frequência"
+            )
+            st.plotly_chart(fig, use_container_width=True)
     
-    # Travessia de Latente
-    st.markdown("---")
-    st.markdown('<h3 style="color: #46B3E6; font-family: \'Inter\', sans-serif; font-weight: 600; margin-bottom: 1rem;">🔍 Travessia do Espaço Latente</h3>', unsafe_allow_html=True)
-    
-    st.markdown("""
-    <div class="info-box">
-        <p style="font-size: 0.75rem; line-height: 1.4; margin: 0;">
-            <strong>Exploração do Espaço Latente:</strong> Varie uma dimensão específica do vetor de ruído 
-            para ver como ela afeta a geração. Isso revela como o modelo organiza as características visuais.
-        </p>
-    </div>
-    """, unsafe_allow_html=True)
-    
-    col_a, col_b = st.columns([3, 1])
-    
-    with col_b:
+    with tab2:
+        st.markdown('<h3 style="color: #46B3E6; font-family: \'Inter\', sans-serif; font-weight: 600; margin-bottom: 1rem;">🔍 Travessia do Espaço Latente</h3>', unsafe_allow_html=True)
+        
         st.markdown("""
-        <div class="data-card">
-            <h4 style="color: #46B3E6; font-family: 'Inter', sans-serif; font-weight: 600; margin-bottom: 0.6rem;">🎛️ Controles</h4>
+        <div class="info-box">
+            <p style="font-size: 0.75rem; line-height: 1.4; margin: 0;">
+                <strong>Exploração do Espaço Latente:</strong> Varie uma dimensão específica do vetor de ruído 
+                para ver como ela afeta a geração. Isso revela como o modelo organiza as características visuais.
+            </p>
         </div>
         """, unsafe_allow_html=True)
-        latent_dim_trav = st.number_input("Latent dim", min_value=16, max_value=256, value=100, step=4, key='trav_latent')
-        dim_idx = st.number_input("Dimensão a variar", min_value=0, max_value=255, value=0, step=1, key='trav_idx')
-        steps = st.slider("Passos", 5, 15, 9, 1)
-        base_seed = st.number_input("Seed base", min_value=0, max_value=10000, value=42, step=1, key='trav_seed')
         
-        if st.button("🔍 Gerar Travessia", type="secondary", use_container_width=True):
-            with st.spinner("Gerando travessia..."):
-                np.random.seed(base_seed)
-                base = np.random.normal(0, 1, (steps, latent_dim_trav))
-                vals = np.linspace(-2.0, 2.0, steps)
-                dim_idx = int(min(dim_idx, latent_dim_trav-1))
-                for i,v in enumerate(vals):
-                    base[i, dim_idx] = v
-                preds = generator.predict(base, verbose=0)
-                preds = (preds - preds.min()) / (preds.max() - preds.min() + 1e-8)
-                strip = grid_image_from_predictions(preds, grid_rows=1, grid_cols=steps)
-                st.session_state.latent_traversal = strip
-                st.session_state.traversal_params = {
-                    'dim_idx': dim_idx,
-                    'steps': steps,
-                    'seed': base_seed
-                }
-    
-    with col_a:
-        if 'latent_traversal' in st.session_state:
-            st.image(st.session_state.latent_traversal, 
-                   caption=f"Travessia na dimensão {st.session_state.traversal_params['dim_idx']} (seed: {st.session_state.traversal_params['seed']})", 
-                   use_container_width=True)
-        else:
+        # Layout otimizado: controles à esquerda, resultado à direita
+        col_controls, col_result = st.columns([1, 2])
+        
+        with col_controls:
             st.markdown("""
-            <div class="data-card" style="text-align: center; padding: 2rem;">
-                <p style="color: #B0B0B0; font-size: 0.75rem; margin: 0;">Configure os parâmetros e clique em "Gerar Travessia" para explorar o espaço latente</p>
+            <div class="data-card">
+                <h4 style="color: #46B3E6; font-family: 'Inter', sans-serif; font-weight: 600; margin-bottom: 0.8rem;">🎛️ Controles</h4>
             </div>
             """, unsafe_allow_html=True)
-    
-    # Histograma de intensidades
-    if 'generated_predictions' in st.session_state:
-        st.markdown("---")
-        st.markdown('<h3 style="color: #46B3E6; font-family: \'Inter\', sans-serif; font-weight: 600; margin-bottom: 1rem;">📈 Análise de Distribuição</h3>', unsafe_allow_html=True)
+            
+            latent_dim_trav = st.number_input("Latent dim", min_value=16, max_value=256, value=100, step=4, key='trav_latent')
+            dim_idx = st.number_input("Dimensão a variar", min_value=0, max_value=255, value=0, step=1, key='trav_idx')
+            steps = st.slider("Passos", 5, 15, 9, 1)
+            base_seed = st.number_input("Seed base", min_value=0, max_value=10000, value=42, step=1, key='trav_seed')
+            
+            if st.button("🔍 Gerar Travessia", type="primary", use_container_width=True):
+                with st.spinner("Gerando travessia..."):
+                    np.random.seed(base_seed)
+                    base = np.random.normal(0, 1, (steps, latent_dim_trav))
+                    vals = np.linspace(-2.0, 2.0, steps)
+                    dim_idx = int(min(dim_idx, latent_dim_trav-1))
+                    for i,v in enumerate(vals):
+                        base[i, dim_idx] = v
+                    preds = generator.predict(base, verbose=0)
+                    preds = (preds - preds.min()) / (preds.max() - preds.min() + 1e-8)
+                    strip = grid_image_from_predictions(preds, grid_rows=1, grid_cols=steps)
+                    st.session_state.latent_traversal = strip
+                    st.session_state.traversal_params = {
+                        'dim_idx': dim_idx,
+                        'steps': steps,
+                        'seed': base_seed
+                    }
         
-        preds = st.session_state.generated_predictions
-        flat = preds.reshape(preds.shape[0], -1)
-        
-        fig = px.histogram(flat.flatten(), nbins=30, title='Distribuição de Intensidades dos Pixels')
-        fig.update_layout(
-            plot_bgcolor='rgba(0,0,0,0)', 
-            paper_bgcolor='rgba(0,0,0,0)', 
-            font_color='#FAFAFA',
-            title_font_size=14,
-            xaxis_title="Intensidade (0-1)",
-            yaxis_title="Frequência"
-        )
-        st.plotly_chart(fig, use_container_width=True)
+        with col_result:
+            if 'latent_traversal' in st.session_state:
+                st.markdown('<h4 style="color: #46B3E6; font-family: \'Inter\', sans-serif; font-weight: 600; margin-bottom: 1rem;">🖼️ Resultado da Travessia</h4>', unsafe_allow_html=True)
+                st.image(st.session_state.latent_traversal, 
+                       caption=f"Travessia na dimensão {st.session_state.traversal_params['dim_idx']} (seed: {st.session_state.traversal_params['seed']})", 
+                       use_container_width=True)
+            else:
+                st.markdown("""
+                <div class="data-card" style="text-align: center; padding: 3rem;">
+                    <p style="color: #B0B0B0; font-size: 0.85rem; margin: 0;">Configure os parâmetros e clique em "Gerar Travessia" para explorar o espaço latente</p>
+                </div>
+                """, unsafe_allow_html=True)
 
 
 def main():
