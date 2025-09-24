@@ -91,7 +91,7 @@ Para a página de Geração funcionar, certifique-se de ter o arquivo do gerador
 ## Notebooks
 
 Os notebooks em `notebooks/` incluem:
-- `1_Exploratory_Data_Analysis.ipynb`: análise exploratória do dataset MNIST
+- `1_Exploratory_Data_Analysis.ipynb`: análise exploratória do dataset MNIST (42.000 treino / 28.000 teste)
 - `2_Model_Contruction.ipynb`: construção/treino do modelo GAN (arquitetura, hiperparâmetros e salvamento de checkpoints)
 
 ## Dicas e Solução de Problemas

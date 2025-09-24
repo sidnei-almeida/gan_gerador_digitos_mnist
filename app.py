@@ -430,14 +430,14 @@ def show_status(model_loaded, images, ckpt_files):
     </div>
     """, unsafe_allow_html=True)
     
-    # Status das Imagens
+    # Status das Imagens (checkpoints)
     images_status = "✅ Carregado" if len(images) > 0 else "❌ Erro"
     images_color = "#46B3E6" if len(images) > 0 else "#E66B6B"
     
     st.markdown(f"""
     <div style="background: rgba(70, 179, 230, 0.1); padding: 0.8rem; border-radius: 8px; margin-bottom: 0.5rem; border-left: 3px solid {images_color};">
         <div style="display: flex; justify-content: space-between; align-items: center;">
-            <span style="color: #FAFAFA; font-weight: 600;">🖼️ Imagens ({len(images)})</span>
+            <span style="color: #FAFAFA; font-weight: 600;">🖼️ Imagens de Checkpoints ({len(images)})</span>
             <span style="color: {images_color}; font-weight: 700;">{images_status}</span>
         </div>
     </div>
@@ -483,11 +483,11 @@ def show_project_info(generator, images, ckpt_files):
     </div>
     """, unsafe_allow_html=True)
     
-    # Total de Imagens
+    # Total de Imagens de Checkpoints
     st.markdown(f"""
     <div style="background: rgba(70, 179, 230, 0.1); padding: 0.8rem; border-radius: 8px; margin-bottom: 0.5rem; border-left: 3px solid #46B3E6;">
         <div style="display: flex; justify-content: space-between; align-items: center;">
-            <span style="color: #FAFAFA; font-weight: 600;">🖼️ Imagens</span>
+            <span style="color: #FAFAFA; font-weight: 600;">🖼️ Imagens de Checkpoints</span>
             <span style="color: #46B3E6; font-weight: 700;">{len(images)}</span>
         </div>
     </div>
@@ -533,29 +533,49 @@ def page_home(training_images):
     
     # Cards de métricas premium - OS PRÓPRIOS CARDS SÃO AS BARRAS
     col1, col2, col3 = st.columns(3)
-    
+
+    total_train = 42000
+    total_test = 28000
+    total_all = total_train + total_test
+    train_pct = (total_train / total_all) * 100
+    test_pct = (total_test / total_all) * 100
+
     with col1:
-        # Barra de progresso para total de imagens
-        total_images = len(training_images)
+        # Amostras de Treino
         st.markdown(f'''
-        <div class="fade-in" style="background: linear-gradient(90deg, #46B3E6 {min(100, total_images*2)}%, rgba(70, 179, 230, 0.1) {min(100, total_images*2)}%); border-radius: 6px; padding: 0.6rem; margin: 0.3rem 0; border: 1px solid rgba(70, 179, 230, 0.3); box-shadow: 0 3px 12px rgba(0, 0, 0, 0.3);">
+        <div class="fade-in" style="background: linear-gradient(90deg, #46B3E6 {train_pct:.1f}%, rgba(70, 179, 230, 0.1) {train_pct:.1f}%); border-radius: 6px; padding: 0.6rem; margin: 0.3rem 0; border: 1px solid rgba(70, 179, 230, 0.3); box-shadow: 0 3px 12px rgba(0, 0, 0, 0.3);">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.25rem;">
-                <span style="color: #FFFFFF; font-weight: 600; font-size: 0.75rem; text-shadow: 0 1px 3px rgba(0,0,0,0.8);">🖼️ Imagens de Treino</span>
-                <span style="color: #FFFFFF; font-weight: 700; font-size: 0.8rem; text-shadow: 0 1px 3px rgba(0,0,0,0.8);">{total_images}</span>
+                <span style="color: #FFFFFF; font-weight: 600; font-size: 0.75rem; text-shadow: 0 1px 3px rgba(0,0,0,0.8);">📊 Amostras de Treino</span>
+                <span style="color: #FFFFFF; font-weight: 700; font-size: 0.8rem; text-shadow: 0 1px 3px rgba(0,0,0,0.8);">{total_train:,}</span>
             </div>
             <div style="background: rgba(255, 255, 255, 0.3); border-radius: 3px; height: 2px; margin: 0.25rem 0;">
                 <div style="background: rgba(255, 255, 255, 0.6); height: 100%; width: 100%; border-radius: 3px;"></div>
             </div>
-            <p style="color: #FFFFFF; margin-top: 0.25rem; font-size: 0.65rem; margin: 0; text-shadow: 0 1px 3px rgba(0,0,0,0.8);">Evolução visual do treinamento</p>
+            <p style="color: #FFFFFF; margin-top: 0.25rem; font-size: 0.65rem; margin: 0; text-shadow: 0 1px 3px rgba(0,0,0,0.8);">Proporção no dataset: {train_pct:.1f}%</p>
         </div>
         ''', unsafe_allow_html=True)
-    
+
     with col2:
-        # Barra de progresso para checkpoints
+        # Amostras de Teste
+        st.markdown(f'''
+        <div class="fade-in" style="background: linear-gradient(90deg, #5CE1E6 {test_pct:.1f}%, rgba(92, 225, 230, 0.1) {test_pct:.1f}%); border-radius: 6px; padding: 0.6rem; margin: 0.3rem 0; border: 1px solid rgba(92, 225, 230, 0.3); box-shadow: 0 3px 12px rgba(0, 0, 0, 0.3);">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.25rem;">
+                <span style="color: #FFFFFF; font-weight: 600; font-size: 0.75rem; text-shadow: 0 1px 3px rgba(0,0,0,0.8);">🧪 Amostras de Teste</span>
+                <span style="color: #FFFFFF; font-weight: 700; font-size: 0.8rem; text-shadow: 0 1px 3px rgba(0,0,0,0.8);">{total_test:,}</span>
+            </div>
+            <div style="background: rgba(255, 255, 255, 0.3); border-radius: 3px; height: 2px; margin: 0.25rem 0;">
+                <div style="background: rgba(255, 255, 255, 0.6); height: 100%; width: 100%; border-radius: 3px;"></div>
+            </div>
+            <p style="color: #FFFFFF; margin-top: 0.25rem; font-size: 0.65rem; margin: 0; text-shadow: 0 1px 3px rgba(0,0,0,0.8);">Proporção no dataset: {test_pct:.1f}%</p>
+        </div>
+        ''', unsafe_allow_html=True)
+
+    with col3:
+        # Quantidade de checkpoints detectados
         ckpt_files, _ = list_checkpoint_files()
         ckpt_count = len([f for f in ckpt_files if f.startswith('ckpt-')])
         st.markdown(f'''
-        <div class="fade-in" style="background: linear-gradient(90deg, #5CE1E6 {min(100, ckpt_count*5)}%, rgba(92, 225, 230, 0.1) {min(100, ckpt_count*5)}%); border-radius: 6px; padding: 0.6rem; margin: 0.3rem 0; border: 1px solid rgba(92, 225, 230, 0.3); box-shadow: 0 3px 12px rgba(0, 0, 0, 0.3);">
+        <div class="fade-in" style="background: linear-gradient(90deg, #7A7ADB {min(100, ckpt_count*5)}%, rgba(122, 122, 219, 0.1) {min(100, ckpt_count*5)}%); border-radius: 6px; padding: 0.6rem; margin: 0.3rem 0; border: 1px solid rgba(122, 122, 219, 0.3); box-shadow: 0 3px 12px rgba(0, 0, 0, 0.3);">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.25rem;">
                 <span style="color: #FFFFFF; font-weight: 600; font-size: 0.75rem; text-shadow: 0 1px 3px rgba(0,0,0,0.8);">📦 Checkpoints</span>
                 <span style="color: #FFFFFF; font-weight: 700; font-size: 0.8rem; text-shadow: 0 1px 3px rgba(0,0,0,0.8);">{ckpt_count}</span>
@@ -563,24 +583,7 @@ def page_home(training_images):
             <div style="background: rgba(255, 255, 255, 0.3); border-radius: 3px; height: 2px; margin: 0.25rem 0;">
                 <div style="background: rgba(255, 255, 255, 0.6); height: 100%; width: 100%; border-radius: 3px;"></div>
             </div>
-            <p style="color: #FFFFFF; margin-top: 0.25rem; font-size: 0.65rem; margin: 0; text-shadow: 0 1px 3px rgba(0,0,0,0.8);">Pontos de salvamento do modelo</p>
-        </div>
-        ''', unsafe_allow_html=True)
-    
-    with col3:
-        # Barra de progresso para modelo carregado
-        generator = load_generator_model()
-        model_status = 100 if generator is not None else 0
-        st.markdown(f'''
-        <div class="fade-in" style="background: linear-gradient(90deg, #7A7ADB {model_status}%, rgba(122, 122, 219, 0.1) {model_status}%); border-radius: 6px; padding: 0.6rem; margin: 0.3rem 0; border: 1px solid rgba(122, 122, 219, 0.3); box-shadow: 0 3px 12px rgba(0, 0, 0, 0.3);">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.25rem;">
-                <span style="color: #FFFFFF; font-weight: 600; font-size: 0.75rem; text-shadow: 0 1px 3px rgba(0,0,0,0.8);">🧠 Modelo GAN</span>
-                <span style="color: #FFFFFF; font-weight: 700; font-size: 0.8rem; text-shadow: 0 1px 3px rgba(0,0,0,0.8);">{'Ativo' if generator else 'Indisponível'}</span>
-            </div>
-            <div style="background: rgba(255, 255, 255, 0.3); border-radius: 3px; height: 2px; margin: 0.25rem 0;">
-                <div style="background: rgba(255, 255, 255, 0.6); height: 100%; width: 100%; border-radius: 3px;"></div>
-            </div>
-            <p style="color: #FFFFFF; margin-top: 0.25rem; font-size: 0.65rem; margin: 0; text-shadow: 0 1px 3px rgba(0,0,0,0.8);">Status do gerador</p>
+            <p style="color: #FFFFFF; margin-top: 0.25rem; font-size: 0.65rem; margin: 0; text-shadow: 0 1px 3px rgba(0,0,0,0.8);">Amostras geradas ao longo do treino</p>
         </div>
         ''', unsafe_allow_html=True)
     
