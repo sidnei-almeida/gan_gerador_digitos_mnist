@@ -298,6 +298,7 @@ GITHUB_USER = "sidnei-almeida"
 GITHUB_REPO = "gan_gerador_digitos_mnist"
 GITHUB_BRANCH = "main"
 BASE_RAW = f"https://raw.githubusercontent.com/{GITHUB_USER}/{GITHUB_REPO}/refs/heads/{GITHUB_BRANCH}"
+BASE_GITHUB = f"https://github.com/{GITHUB_USER}/{GITHUB_REPO}"
 
 
 @st.cache_resource
@@ -314,7 +315,7 @@ def load_generator_model():
                 st.warning(f"Falha ao carregar modelo em {path}: {e}")
     # Fallback: baixar do GitHub Raw
     remote_paths = [
-        f"{BASE_RAW}/modelos/generator_model.keras",
+        f"{BASE_GITHUB}/raw/refs/heads/{GITHUB_BRANCH}/modelos/generator_model.keras",
         f"{BASE_RAW}/notebooks/generator_model.keras",
     ]
     for url in remote_paths:
@@ -375,7 +376,7 @@ def list_images():
         return [os.path.join(img_dir, f) for f in files]
     # Fallback remoto: usar nomes conhecidos presentes no repositório
     expected_names = [f"image_for_ckpt_{i}.png" for i in range(0, 12)]
-    return [f"{BASE_RAW}/imagens/{name}" for name in expected_names]
+    return [f"{BASE_GITHUB}/blob/{GITHUB_BRANCH}/imagens/{name}?raw=true" for name in expected_names]
 
 
 def generate_digits(generator, num_images=16, latent_dim=100, seed=None):
