@@ -301,12 +301,47 @@ BASE_RAW = f"https://raw.githubusercontent.com/{GITHUB_USER}/{GITHUB_REPO}/refs/
 BASE_GITHUB = f"https://github.com/{GITHUB_USER}/{GITHUB_REPO}"
 
 
-@st.cache_resource
+def test_model_loading():
+    """Testa o carregamento do modelo com o link específico fornecido"""
+    test_url = "https://github.com/sidnei-almeida/gan_gerador_digitos_mnist/raw/refs/heads/main/modelos/generator_model.keras"
+    
+    try:
+        st.info(f"🧪 Testando carregamento direto de: {test_url}")
+        resp = requests.get(test_url, timeout=60)
+        st.info(f"📊 Status: {resp.status_code}, Tamanho: {len(resp.content)} bytes")
+        
+        if resp.status_code == 200 and resp.content:
+            with tempfile.NamedTemporaryFile(delete=False, suffix='.keras') as tmpf:
+                tmpf.write(resp.content)
+                tmp_path = tmpf.name
+            
+            model = tf.keras.models.load_model(tmp_path, compile=False)
+            st.success(f"✅ Teste bem-sucedido! Dimensão latente: {model.input_shape[1]}")
+            
+            try:
+                os.unlink(tmp_path)
+            except Exception:
+                pass
+            return model
+        else:
+            st.error(f"❌ Falha no teste: Status {resp.status_code}")
+            return None
+    except Exception as e:
+        st.error(f"❌ Erro no teste: {str(e)}")
+        return None
+
 def load_generator_model():
+    """Carrega o modelo gerador do GAN - com cache manual na sessão"""
+    # Verificar se já temos o modelo em cache na sessão
+    if 'generator_model' in st.session_state and st.session_state.generator_model is not None:
+        return st.session_state.generator_model
+    
+    # Tentar carregar localmente primeiro
     possible_paths = [
         os.path.join("modelos", "generator_model.keras"),
         os.path.join("notebooks", "generator_model.keras")
     ]
+    
     for path in possible_paths:
         if os.path.exists(path):
             try:
@@ -314,32 +349,55 @@ def load_generator_model():
                 # Armazenar dimensão latente na sessão
                 if hasattr(model, 'input_shape') and model.input_shape:
                     st.session_state.model_latent_dim = model.input_shape[1]
+                # Armazenar modelo na sessão para cache
+                st.session_state.generator_model = model
+                st.success(f"✅ Modelo carregado localmente de: {path}")
                 return model
             except Exception as e:
-                st.warning(f"Falha ao carregar modelo em {path}: {e}")
+                st.warning(f"⚠️ Falha ao carregar modelo em {path}: {e}")
+    
     # Fallback: baixar do GitHub Raw
+    st.info("🔄 Tentando carregar modelo do GitHub...")
     remote_paths = [
+        f"{BASE_RAW}/modelos/generator_model.keras",
         f"{BASE_GITHUB}/raw/refs/heads/{GITHUB_BRANCH}/modelos/generator_model.keras",
         f"{BASE_RAW}/notebooks/generator_model.keras",
     ]
+    
     for url in remote_paths:
         try:
+            st.info(f"🔄 Tentando baixar modelo de: {url}")
             resp = requests.get(url, timeout=60)
+            st.info(f"📊 Status da resposta: {resp.status_code}, Tamanho: {len(resp.content)} bytes")
+            
             if resp.status_code == 200 and resp.content:
                 with tempfile.NamedTemporaryFile(delete=False, suffix='.keras') as tmpf:
                     tmpf.write(resp.content)
                     tmp_path = tmpf.name
+                
+                st.info(f"💾 Arquivo temporário salvo em: {tmp_path}")
                 model = tf.keras.models.load_model(tmp_path, compile=False)
+                
                 # Armazenar dimensão latente na sessão
                 if hasattr(model, 'input_shape') and model.input_shape:
                     st.session_state.model_latent_dim = model.input_shape[1]
+                # Armazenar modelo na sessão para cache
+                st.session_state.generator_model = model
+                st.success(f"✅ Modelo carregado com sucesso! Dimensão latente: {model.input_shape[1]}")
+                
                 try:
                     os.unlink(tmp_path)
                 except Exception:
                     pass
                 return model
+            else:
+                st.warning(f"❌ Falha na resposta: Status {resp.status_code}, Conteúdo vazio: {len(resp.content) == 0}")
         except Exception as e:
-            st.warning(f"Falha ao baixar modelo de {url}: {e}")
+            st.error(f"❌ Erro ao baixar modelo de {url}: {str(e)}")
+            import traceback
+            st.error(f"Traceback: {traceback.format_exc()}")
+    
+    st.error("❌ Falha ao carregar modelo de todas as fontes")
     return None
 
 
@@ -689,9 +747,43 @@ def page_home(training_images):
 
 
 def page_model(generator):
-    st.markdown("## 🤖 Modelo Gerador")
+    st.markdown('<h2 style="color: #46B3E6; font-family: \'Inter\', sans-serif; font-weight: 600; margin-bottom: 2rem;">🤖 Modelo Gerador</h2>', unsafe_allow_html=True)
+    
+    # Botões de controle
+    col1, col2, col3 = st.columns(3)
+    
+    with col1:
+        if st.button("🔄 Recarregar Modelo", type="secondary"):
+            # Limpar cache da sessão
+            if 'generator_model' in st.session_state:
+                del st.session_state.generator_model
+            if 'model_latent_dim' in st.session_state:
+                del st.session_state.model_latent_dim
+            st.rerun()
+    
+    with col2:
+        if st.button("🧪 Testar Carregamento", type="secondary"):
+            test_model = test_model_loading()
+            if test_model is not None:
+                st.session_state.test_model = test_model
+    
+    with col3:
+        if st.button("🗑️ Limpar Cache", type="secondary"):
+            # Limpar todo o cache da sessão
+            for key in list(st.session_state.keys()):
+                if 'model' in key.lower() or 'generator' in key.lower():
+                    del st.session_state[key]
+            st.rerun()
+    
     if generator is None:
-        st.warning("Modelo não encontrado em `modelos/generator_model.keras` ou `notebooks/generator_model.keras`.")
+        st.markdown("""
+        <div class="warning-box">
+            <p style="font-size: 0.75rem; line-height: 1.4; margin: 0;">
+                <strong>⚠️ Modelo não encontrado</strong><br>
+                Carregue um modelo gerador válido em <code>modelos/generator_model.keras</code> ou <code>notebooks/generator_model.keras</code>.
+            </p>
+        </div>
+        """, unsafe_allow_html=True)
         return
     try:
         generator_summary = []
