@@ -310,7 +310,11 @@ def load_generator_model():
     for path in possible_paths:
         if os.path.exists(path):
             try:
-                return tf.keras.models.load_model(path, compile=False)
+                model = tf.keras.models.load_model(path, compile=False)
+                # Armazenar dimensão latente na sessão
+                if hasattr(model, 'input_shape') and model.input_shape:
+                    st.session_state.model_latent_dim = model.input_shape[1]
+                return model
             except Exception as e:
                 st.warning(f"Falha ao carregar modelo em {path}: {e}")
     # Fallback: baixar do GitHub Raw
@@ -326,6 +330,9 @@ def load_generator_model():
                     tmpf.write(resp.content)
                     tmp_path = tmpf.name
                 model = tf.keras.models.load_model(tmp_path, compile=False)
+                # Armazenar dimensão latente na sessão
+                if hasattr(model, 'input_shape') and model.input_shape:
+                    st.session_state.model_latent_dim = model.input_shape[1]
                 try:
                     os.unlink(tmp_path)
                 except Exception:
@@ -382,13 +389,50 @@ def list_images():
 def generate_digits(generator, num_images=16, latent_dim=100, seed=None):
     if generator is None:
         return None
-    if seed is not None:
-        np.random.seed(seed)
-    noise = np.random.normal(0, 1, (num_images, latent_dim))
-    preds = generator.predict(noise, verbose=0)
-    # Normaliza para [0,1]
-    preds = (preds - preds.min()) / (preds.max() - preds.min() + 1e-8)
-    return preds
+    
+    try:
+        # Validação dos parâmetros
+        if num_images <= 0 or num_images > 100:
+            st.error("Número de imagens deve estar entre 1 e 100")
+            return None
+        
+        if latent_dim <= 0 or latent_dim > 512:
+            st.error("Dimensão latente deve estar entre 1 e 512")
+            return None
+        
+        # Verificar se o modelo tem a dimensão de entrada esperada
+        input_shape = generator.input_shape
+        if input_shape is None or len(input_shape) != 2:
+            st.error("Modelo não tem formato de entrada válido")
+            return None
+        
+        expected_latent_dim = input_shape[1]
+        if latent_dim != expected_latent_dim:
+            st.warning(f"Ajustando dimensão latente de {latent_dim} para {expected_latent_dim} (dimensão esperada pelo modelo)")
+            latent_dim = expected_latent_dim
+        
+        if seed is not None:
+            np.random.seed(seed)
+        
+        # Gerar ruído com formato correto
+        noise = np.random.normal(0, 1, (num_images, latent_dim)).astype(np.float32)
+        
+        # Fazer predição
+        preds = generator.predict(noise, verbose=0)
+        
+        # Verificar se a predição foi bem-sucedida
+        if preds is None or preds.size == 0:
+            st.error("Falha na geração - modelo retornou resultado vazio")
+            return None
+        
+        # Normaliza para [0,1]
+        preds = (preds - preds.min()) / (preds.max() - preds.min() + 1e-8)
+        return preds
+        
+    except Exception as e:
+        st.error(f"Erro na geração: {str(e)}")
+        st.error(f"Parâmetros: num_images={num_images}, latent_dim={latent_dim}, seed={seed}")
+        return None
 
 
 def grid_image_from_predictions(preds, grid_rows=4, grid_cols=4):
@@ -772,7 +816,9 @@ def page_generation(generator):
             </div>
             """, unsafe_allow_html=True)
             
-            latent_dim = st.number_input("Dimensão do ruído", min_value=16, max_value=256, value=100, step=4, help="Tamanho do vetor de ruído de entrada")
+            # Usar dimensão latente do modelo se disponível, senão usar 100 como padrão
+            default_latent = st.session_state.get('model_latent_dim', 100)
+            latent_dim = st.number_input("Dimensão do ruído", min_value=16, max_value=512, value=default_latent, step=4, help="Tamanho do vetor de ruído de entrada")
             seed = st.number_input("Seed", min_value=0, max_value=10_000, value=0, step=1, help="Para reproduzir resultados")
             
             st.markdown("""
@@ -905,8 +951,11 @@ def page_generation(generator):
             </div>
             """, unsafe_allow_html=True)
             
-            latent_dim_trav = st.number_input("Latent dim", min_value=16, max_value=256, value=100, step=4, key='trav_latent')
-            dim_idx = st.number_input("Dimensão a variar", min_value=0, max_value=255, value=0, step=1, key='trav_idx')
+            # Usar dimensão latente do modelo se disponível, senão usar 100 como padrão
+            default_latent_trav = st.session_state.get('model_latent_dim', 100)
+            latent_dim_trav = st.number_input("Latent dim", min_value=16, max_value=512, value=default_latent_trav, step=4, key='trav_latent')
+            max_dim_idx = max(0, default_latent_trav - 1)
+            dim_idx = st.number_input("Dimensão a variar", min_value=0, max_value=max_dim_idx, value=0, step=1, key='trav_idx')
             steps = st.slider("Passos", 5, 15, 9, 1)
             base_seed = st.number_input("Seed base", min_value=0, max_value=10000, value=42, step=1, key='trav_seed')
             
